@@ -1,0 +1,14 @@
+# 1. Folder Virtual Environment (WAJIB DI-IGNORE)
+# Isinya ribuan file sistem yang hanya berlaku di laptop anda
+env/
+venv/
+.env
+
+# 2. Sampah Python (Compiled files)
+# Ini file otomatis buatan Python agar cepat, tidak perlu di-upload
+__pycache__/
+*.py[cod]
+
+# 3. File Sistem (Junk files)
+.DS_Store
+Thumbs.db
