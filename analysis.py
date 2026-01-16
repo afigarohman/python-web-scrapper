@@ -1,62 +1,51 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# 1. LOAD DATA
+# 1. LOAD DATA BARU
+filename = "hasil_buku_banyak.csv"  # <-- Kita ubah ke file yang datanya 100 biji
 try:
-    df = pd.read_csv("hasil_buku.csv")
+    df = pd.read_csv(filename)
     
-    # --- BAGIAN PERBAIKAN (DEBUGGING) ---
-    print("Nama kolom asli:", df.columns.tolist())
-    
-    # Hapus spasi di awal/akhir nama kolom (misal: 'Harga ' jadi 'Harga')
+    # Bersihkan nama kolom (hapus spasi ekstra)
     df.columns = df.columns.str.strip()
     
-    print("Nama kolom setelah dibersihkan:", df.columns.tolist())
-    # ------------------------------------
-
-    print("\n--- Data Awal ---")
-    print(df.head())
-
-    # 2. DATA CLEANING (Pembersihan Isi Data)
-    # Hapus '£' dan ubah jadi angka
-    # Kita gunakan try-except agar kalau ada error di baris tertentu, kita tahu
-    
-    # Cek apakah kolom 'Harga' benar-benar ada sekarang
+    # 2. DATA CLEANING
     if 'Harga' in df.columns:
+        # Hapus '£' dan ubah jadi angka float
         df['Harga'] = df['Harga'].str.replace('£', '')
         df['Harga'] = df['Harga'].astype(float)
         
         # 3. ANALISIS DATA
         rata_rata = df['Harga'].mean()
-        termahal = df['Harga'].max()
-        termurah = df['Harga'].min()
-
-        print("\n--- Hasil Analisis ---")
-        print(f"Rata-rata Harga Buku: £{rata_rata:.2f}")
-        print(f"Buku Termahal: £{termahal}")
-        print(f"Buku Termurah: £{termurah}")
-
-        # Cari judul buku yang paling mahal
-        buku_sultan = df[df['Harga'] == termahal]
+        print(f"\n--- HASIL ANALISIS ({len(df)} Buku) ---")
+        print(f"Rata-rata Harga: £{rata_rata:.2f}")
         
-        # Kita pakai .iloc[0] untuk mengambil baris pertama saja biar rapi
-        judul_sultan = buku_sultan.iloc[0]['Judul Buku'] if 'Judul Buku' in df.columns else buku_sultan.iloc[0]['judul buku']
-        
-        print(f"Judul Buku Termahal: {judul_sultan}")
+        # Fitur Baru: Top 5 Buku Termahal
+        print("\nTop 5 Buku Termahal:")
+        top_5 = df.nlargest(5, 'Harga')
+        for index, row in top_5.iterrows():
+            print(f"- {row['Judul Buku']} (£{row['Harga']})")
 
         # 4. VISUALISASI DATA
         plt.figure(figsize=(10, 6))
-        plt.hist(df['Harga'], bins=10, color='skyblue', edgecolor='black')
-        plt.title('Distribusi Harga Buku')
+        
+        # Histogram
+        plt.hist(df['Harga'], bins=20, color='#4CAF50', edgecolor='black')
+        
+        # Menambahkan garis rata-rata (garis merah putus-putus)
+        plt.axvline(rata_rata, color='red', linestyle='dashed', linewidth=2, label=f'Rata-rata: £{rata_rata:.2f}')
+        
+        plt.title(f'Distribusi Harga {len(df)} Buku')
         plt.xlabel('Harga (£)')
         plt.ylabel('Jumlah Buku')
-        plt.grid(axis='y', alpha=0.75)
+        plt.legend()
+        plt.grid(axis='y', alpha=0.5)
         
         plt.savefig("grafik_harga.png")
         print("\nGrafik berhasil disimpan sebagai 'grafik_harga.png'")
         
     else:
-        print("\nERROR: Kolom 'Harga' masih tidak ditemukan. Cek nama kolom di atas.")
+        print("Kolom 'Harga' tidak ditemukan.")
 
-except Exception as e:
-    print(f"\nTerjadi Error: {e}")
+except FileNotFoundError:
+    print(f"File {filename} tidak ditemukan. Jalankan scraper.py dulu!")

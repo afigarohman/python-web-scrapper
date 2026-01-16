@@ -1,40 +1,68 @@
 import requests
-from bs4 import BeautifulSoup  # Kita panggil alat bedahnya
+from bs4 import BeautifulSoup
 import pandas as pd
+import time  # Library wajib untuk mengatur jeda waktu
 
-url = "http://books.toscrape.com/"
-response = requests.get(url)
+# 1. Persiapan
+data_semua_buku = []
+base_url = "http://books.toscrape.com/catalogue/page-{}.html"
 
-if response.status_code == 200:
-    # 1. Ubah data mentah (HTML) menjadi objek 'soup' agar bisa dibaca Python
-    soup = BeautifulSoup(response.content, "html.parser")
-    # 2. Cari semua wadah buku.
-    # Di website ini, setiap buku dibungkus dalam tag <article> dengan class "product_pod"
-    books = soup.find_all("article", class_="product_pod")
-    data_buku = []
+# Kita akan mengambil data dari halaman 1 sampai 5
+# range(1, 6) artinya: mulai dari 1, berhenti SEBELUM 6 (jadi 1,2,3,4,5)
+halaman_awal = 1
+halaman_akhir = 5
 
+print(f"Memulai scraping dari halaman {halaman_awal} sampai {halaman_akhir}...")
+print("-" * 40)
+
+# 2. Proses Looping (Perulangan) per Halaman
+for halaman in range(halaman_awal, halaman_akhir + 1):
+    # Membuat URL dinamis: page-1.html, page-2.html, dst
+    url_saat_ini = base_url.format(halaman)
     
-    # 3. Looping (perulangan) untuk membongkar setiap buku satu per satu
-    for book in books:
-        # Mengambil Judul
-        # Judul ada di dalam tag <h3>, lalu di dalam tag <a>, atribut 'title'
-        title_element = book.find("h3").find("a")
-        title = title_element["title"] # Kita ambil isi atribut 'title' biar lengkap
+    print(f"Sedang mengambil data dari: Halaman {halaman}")
+    
+    try:
+        response = requests.get(url_saat_ini)
         
-        # Mengambil Harga
-        # Harga ada di tag <p> dengan class "price_color"
-        price_element = book.find("p", class_="price_color")
-        price = price_element.text # Kita ambil teksnya saja (misal: £51.77)
-        
-        data_buku.append({
-            "judul buku": title,
-            "Harga": price
-        })
+        if response.status_code == 200:
+            soup = BeautifulSoup(response.content, "html.parser")
+            books = soup.find_all("article", class_="product_pod")
+            
+            # Loop untuk setiap buku di halaman tersebut
+            for book in books:
+                # Ambil Judul
+                title = book.find("h3").find("a")["title"]
+                
+                # Ambil Harga
+                price = book.find("p", class_="price_color").text
+                
+                # Masukkan ke keranjang besar
+                data_semua_buku.append({
+                    "Judul Buku": title,
+                    "Harga": price
+                })
+        else:
+            print(f"--> Gagal membuka halaman {halaman}")
+            
+    except Exception as e:
+        print(f"--> Terjadi error di halaman {halaman}: {e}")
+    
+    # PENTING: Tidur dulu 1 detik sebelum lanjut ke halaman berikutnya
+    # Ini etika scraping agar tidak membebani server
+    time.sleep(1)
 
-        df = pd.DataFrame(data_buku)
-        df.to_csv("hasil_buku.csv", index=False)
+# 3. Penyimpanan Data
+print("-" * 40)
+print("Proses Selesai!")
 
-        print("berhasil, data telah disimpan ke 'hasil_buku.csv")
-        print("Total data: {len(data_buku)} buku")
+if len(data_semua_buku) > 0:
+    # Simpan ke file CSV baru biar file lama tidak tertimpa (opsional)
+    filename = "hasil_buku_banyak.csv"
+    df = pd.DataFrame(data_semua_buku)
+    df.to_csv(filename, index=False)
+    
+    print(f"Berhasil mendapatkan total {len(data_semua_buku)} buku.")
+    print(f"Data disimpan ke file: {filename}")
 else:
-    print("Gagal terhubung.")
+    print("Tidak ada data yang didapatkan.")
